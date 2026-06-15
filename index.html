@@ -608,13 +608,30 @@ async function sendNotification(desc,fileCount){
     const folderLink=`https://drive.google.com/drive/folders/${upSt.phaseId}`;
     const body=`New photos uploaded to OptimERA Drive\n\nUploaded by: ${auth.userEmail}\nBranch: ${upSt.branch}\nDestination: ${dest}\nDescription: ${desc}\nFiles uploaded: ${fileCount}\nTime: ${now}\n\nView folder: ${folderLink}`;
     const subject=`[OptimERA] ${fileCount} photo${fileCount>1?'s':''} uploaded by ${auth.userEmail} — ${upSt.branch}`;
-    const raw=btoa(`To: ${NOTIF_EMAIL}\r\nSubject: ${subject}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${body}`).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-    await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{
+    // Encode using TextEncoder to safely handle non-ASCII characters
+    const msgStr=`To: ${NOTIF_EMAIL}\r\nFrom: ${auth.userEmail}\r\nSubject: ${subject}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${body}`;
+    const encoded=btoa(unescape(encodeURIComponent(msgStr))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+    const resp=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{
       method:'POST',
       headers:{'Authorization':'Bearer '+auth.accessToken,'Content-Type':'application/json'},
-      body:JSON.stringify({raw})
+      body:JSON.stringify({raw:encoded})
     });
-  }catch(e){console.warn('Email notification failed:',e);}
+    if(!resp.ok){
+      const err=await resp.json().catch(()=>({}));
+      const msg=err.error?.message||`HTTP ${resp.status}`;
+      console.error('Gmail send failed:',msg);
+      // Show non-blocking warning on the upload result
+      const el=document.getElementById('upload-result');
+      if(el){
+        const warn=document.createElement('div');
+        warn.style.cssText='font-size:12px;color:#854F0B;background:#FAEEDA;border-radius:8px;padding:8px 12px;margin-top:8px';
+        warn.textContent=`⚠ Notification email could not be sent: ${msg}. Check that the Gmail API is enabled in Google Cloud Console and the gmail.send scope is approved on the OAuth consent screen.`;
+        el.appendChild(warn);
+      }
+    }
+  }catch(e){
+    console.warn('Email notification error:',e);
+  }
 }
 
 function resetAll(){

@@ -260,6 +260,7 @@ textarea{resize:vertical;min-height:80px}
 <script>
 const COMPANY='OptimERA';
 const NOTIF_EMAIL='drive-notifications@optimerainc.com';
+const HARDCODED_CLIENT_ID='1051061493824-tu08v7j0476ie5fdr9p5s59k9bifo5je.apps.googleusercontent.com';
 
 let cfg={clientId:'',rootFolderId:''};
 let auth={authed:false,accessToken:null,userEmail:''};
@@ -293,9 +294,9 @@ function hideSettings(){
 
 /* ── AUTH ── */
 function handleAuth(){
-  if(!cfg.clientId){showAlert('login-error','error','Please go to Settings and add your OAuth Client ID first.');return;}
+  const clientId=HARDCODED_CLIENT_ID;
   const client=google.accounts.oauth2.initTokenClient({
-    client_id:cfg.clientId,
+    client_id:clientId,
     scope:'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/gmail.send',
     callback:(resp)=>{
       if(resp.error){showAlert('login-error','error','Sign-in error: '+resp.error);return;}

@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>OptimERA Photo Upload</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#f5f5f3;color:#1a1a1a;font-size:15px;min-height:100vh}
+.app{max-width:600px;margin:0 auto;padding:1.5rem 1rem}
+.header{display:flex;align-items:center;gap:12px;margin-bottom:2rem}
+.header-icon{width:42px;height:42px;background:#185FA5;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.header-icon svg{width:22px;height:22px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.header-text h1{font-size:18px;font-weight:600;color:#1a1a1a}
+.header-text p{font-size:12px;color:#888;margin-top:2px}
+.header-right{margin-left:auto}
+.card{background:#fff;border:1px solid rgba(0,0,0,0.1);border-radius:14px;padding:1.25rem;margin-bottom:1rem}
+.card-title{font-size:13px;font-weight:600;margin-bottom:.875rem;display:flex;align-items:center;gap:8px;text-transform:uppercase;letter-spacing:.05em;color:#555}
+.card-title svg{width:15px;height:15px;stroke:#185FA5;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.step-pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#185FA5;background:#E6F1FB;padding:3px 10px;border-radius:20px;margin-bottom:.75rem}
+.form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:.875rem}
+.form-group:last-child{margin-bottom:0}
+label{font-size:12px;color:#666;font-weight:500}
+input,select,textarea{width:100%;padding:9px 12px;border:1px solid rgba(0,0,0,0.2);border-radius:9px;font-size:14px;background:#fff;color:#1a1a1a;font-family:inherit;outline:none;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:#185FA5;box-shadow:0 0 0 2px rgba(24,95,165,.1)}
+input:disabled,select:disabled{background:#f5f5f3;color:#aaa;cursor:not-allowed}
+textarea{resize:vertical;min-height:80px}
+.btn{padding:9px 18px;border-radius:9px;font-size:14px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:all .15s;border:1px solid rgba(0,0,0,0.2);background:transparent;color:#1a1a1a;text-decoration:none;width:100%}
+.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.45;cursor:not-allowed;pointer-events:none}
+.btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.btn-primary{background:#185FA5;color:#fff;border-color:#185FA5}
+.btn-primary:hover{background:#0c447c}
+.btn-primary svg{stroke:#fff}
+.btn-google{background:#fff;color:#1a1a1a;border:1px solid rgba(0,0,0,0.2);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.btn-google:hover{background:#f8f8f8}
+.btn-sm{padding:6px 12px;font-size:12px;width:auto}
+.btn-outline{background:transparent;color:#185FA5;border-color:#185FA5}
+.btn-outline:hover{background:#E6F1FB}
+.branch-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.branch-chip{padding:10px 8px;border:1.5px solid rgba(0,0,0,0.12);border-radius:10px;font-size:12px;font-weight:500;cursor:pointer;text-align:center;transition:all .15s;background:#fff;color:#555}
+.branch-chip svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;display:block;margin:0 auto 5px}
+.branch-chip:hover{border-color:#185FA5;color:#185FA5}
+.branch-chip.selected{background:#185FA5;border-color:#185FA5;color:#fff}
+.branch-chip.selected svg{stroke:#fff}
+.cust-dropdown-wrap{position:relative}
+.cust-selected{width:100%;padding:9px 12px;border:1px solid rgba(0,0,0,0.2);border-radius:9px;font-size:14px;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:40px;transition:border-color .15s}
+.cust-selected:hover{border-color:#185FA5}
+.cust-selected.open{border-color:#185FA5;box-shadow:0 0 0 2px rgba(24,95,165,.1)}
+.cust-selected.disabled{background:#f5f5f3;color:#aaa;cursor:not-allowed;pointer-events:none}
+.cust-selected svg{width:14px;height:14px;stroke:#888;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;transition:transform .15s}
+.cust-selected.open svg{transform:rotate(180deg)}
+.cust-list{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid rgba(0,0,0,0.15);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:100;max-height:240px;overflow-y:auto;display:none}
+.cust-list.open{display:block}
+.cust-item{padding:10px 14px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .1s}
+.cust-item:hover{background:#f5f5f3}
+.cust-item.gd-item{color:#854F0B;font-weight:500;border-top:1px solid rgba(0,0,0,0.08);background:#FAFAF7}
+.cust-item.gd-item:hover{background:#FAEEDA}
+.cust-item.empty-item{color:#aaa;cursor:default;font-size:12px}
+.cust-item.empty-item:hover{background:none}
+.phase-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.phase-btn{padding:12px 8px;border:1.5px solid rgba(0,0,0,0.12);border-radius:10px;font-size:13px;font-weight:500;cursor:pointer;text-align:center;background:#fff;transition:all .15s;color:#555}
+.phase-btn:hover{border-color:#185FA5;color:#185FA5}
+.phase-btn.selected{background:#185FA5;border-color:#185FA5;color:#fff}
+.drop-zone{border:2px dashed rgba(0,0,0,0.15);border-radius:12px;padding:2rem 1.5rem;text-align:center;cursor:pointer;transition:all .2s;background:#fafaf9}
+.drop-zone:hover,.drop-zone.dragover{border-color:#185FA5;background:#E6F1FB}
+.drop-zone svg{width:32px;height:32px;stroke:#185FA5;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;margin:0 auto .75rem;display:block}
+.drop-zone p{font-size:14px;color:#555;margin-bottom:.25rem}
+.drop-zone span{font-size:12px;color:#aaa}
+.file-list{margin-top:.875rem;display:flex;flex-direction:column;gap:6px}
+.file-item{display:flex;align-items:center;gap:10px;background:#f9f9f8;border:1px solid rgba(0,0,0,0.08);border-radius:9px;padding:8px 10px}
+.file-thumb{width:36px;height:36px;border-radius:6px;object-fit:cover;flex-shrink:0}
+.file-thumb-icon{width:36px;height:36px;border-radius:6px;background:#f0f0ee;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.file-thumb-icon svg{width:16px;height:16px;stroke:#aaa;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.file-info{flex:1;min-width:0}
+.file-name{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#1a1a1a}
+.file-rename{font-size:11px;color:#185FA5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file-size{font-size:11px;color:#aaa}
+.file-status{font-size:11px;font-weight:600;flex-shrink:0}
+.file-progress{height:3px;background:#e0e0de;border-radius:2px;margin-top:3px;overflow:hidden}
+.file-progress-bar{height:100%;background:#185FA5;border-radius:2px;transition:width .3s}
+.file-remove{width:22px;height:22px;border-radius:50%;background:none;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#ccc;transition:color .15s;padding:0}
+.file-remove:hover{color:#A32D2D}
+.file-remove svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.status-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle}
+.dot-green{background:#639922}.dot-red{background:#E24B4A}
+.spinner{display:inline-block;width:11px;height:11px;border:1.5px solid rgba(0,0,0,.15);border-top-color:#185FA5;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:4px}
+.spinner-white{display:inline-block;width:11px;height:11px;border:1.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:4px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.alert{border-radius:10px;padding:.875rem 1rem;font-size:13px;display:flex;gap:8px;align-items:flex-start;margin-top:.875rem;line-height:1.5}
+.alert svg{width:16px;height:16px;flex-shrink:0;margin-top:1px;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.alert-success{background:#EAF3DE;color:#3B6D11}.alert-success svg{stroke:#3B6D11}
+.alert-error{background:#FCEBEB;color:#A32D2D}.alert-error svg{stroke:#A32D2D}
+.locked{opacity:.4;pointer-events:none;user-select:none}
+.destination-pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;background:#E6F1FB;color:#0C447C;padding:4px 10px;border-radius:20px;margin-top:.5rem}
+/* Login screen */
+.login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem}
+.login-card{background:#fff;border:1px solid rgba(0,0,0,0.1);border-radius:16px;padding:2rem;width:100%;max-width:380px;text-align:center}
+.login-logo{width:56px;height:56px;background:#185FA5;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem}
+.login-logo svg{width:28px;height:28px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.login-card h1{font-size:20px;font-weight:600;margin-bottom:.5rem}
+.login-card p{font-size:13px;color:#888;line-height:1.6;margin-bottom:1.5rem}
+.settings-screen{padding:1.5rem;max-width:480px;margin:0 auto}
+</style>
+</head>
+<body>
+
+<!-- Login Screen -->
+<div id="login-screen" class="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    </div>
+    <h1>OptimERA Photo Upload</h1>
+    <p>Sign in with your OptimERA Google account to upload photos to a project.</p>
+    <div id="login-error" style="margin-bottom:1rem"></div>
+    <button class="btn btn-google" onclick="handleAuth()">
+      <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:none;fill:none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+      Sign in with Google
+    </button>
+    <div style="margin-top:1rem">
+      <button class="btn btn-sm" onclick="showSettings()" style="width:auto;color:#aaa;border:none;background:none;font-size:12px">⚙ Settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Screen -->
+<div id="settings-screen" style="display:none" class="settings-screen">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.5rem">
+    <button class="btn btn-sm btn-outline" onclick="hideSettings()" style="width:auto">← Back</button>
+    <h2 style="font-size:16px;font-weight:600">Settings</h2>
+  </div>
+  <div class="card">
+    <div class="card-title"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>OAuth Client ID</div>
+    <div class="form-group" style="margin-bottom:.75rem">
+      <label>Google OAuth Client ID</label>
+      <input type="text" id="s-client-id" placeholder="xxxxxxxxxx.apps.googleusercontent.com"/>
+    </div>
+    <div class="card-title" style="margin-top:1rem"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>OptimERA Root Folder ID</div>
+    <p style="font-size:12px;color:#888;margin-bottom:.75rem">Copy this from the Admin App → Settings after running Verify.</p>
+    <div class="form-group" style="margin-bottom:.75rem">
+      <label>Root Folder ID</label>
+      <input type="text" id="s-root-id" placeholder="Paste OptimERA folder ID here"/>
+    </div>
+    <button class="btn btn-primary" onclick="saveSettings()">Save settings</button>
+    <div id="settings-status" style="margin-top:.75rem;font-size:12px;color:#3B6D11"></div>
+  </div>
+</div>
+
+<!-- Main Upload App -->
+<div id="main-app" style="display:none">
+  <div class="app">
+    <div class="header">
+      <div class="header-icon">
+        <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      </div>
+      <div class="header-text">
+        <h1>Photo Upload</h1>
+        <p id="user-email-display"></p>
+      </div>
+      <div class="header-right">
+        <button class="btn btn-sm" onclick="signOut()" style="width:auto;font-size:12px">Sign out</button>
+      </div>
+    </div>
+
+    <!-- Step 1: Branch -->
+    <div class="card">
+      <div class="step-pill">Step 1</div>
+      <div class="card-title"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>Select your branch</div>
+      <div class="branch-grid">
+        <div class="branch-chip" onclick="upSelectBranch(this,'Networks')"><svg viewBox="0 0 24 24"><rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-4h14v4M12 12V8"/></svg>Networks</div>
+        <div class="branch-chip" onclick="upSelectBranch(this,'Corporate')"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>Corporate</div>
+        <div class="branch-chip" onclick="upSelectBranch(this,'Marine')"><svg viewBox="0 0 24 24"><path d="M3 17l1.5-9L12 3l7.5 5L21 17"/><path d="M3 17c3 3 15 3 18 0"/></svg>Marine</div>
+        <div class="branch-chip" onclick="upSelectBranch(this,'Tech')"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="2" x2="9" y2="4"/><line x1="15" y1="2" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="22"/><line x1="15" y1="20" x2="15" y2="22"/><line x1="20" y1="9" x2="22" y2="9"/><line x1="20" y1="14" x2="22" y2="14"/><line x1="2" y1="9" x2="4" y2="9"/><line x1="2" y1="14" x2="4" y2="14"/></svg>Tech</div>
+        <div class="branch-chip" onclick="upSelectBranch(this,'Office Supply Store')"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Office Supply</div>
+        <div class="branch-chip" onclick="upSelectBranch(this,'Linemen')"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>Linemen</div>
+      </div>
+    </div>
+
+    <!-- Step 2: Customer / Project -->
+    <div class="card locked" id="up-step2">
+      <div class="step-pill">Step 2</div>
+      <div class="card-title"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Select customer &amp; project</div>
+      <div class="form-group">
+        <label>Customer</label>
+        <div class="cust-dropdown-wrap">
+          <div class="cust-selected disabled" id="up-cust-sel" onclick="toggleDD('up-cust-sel','up-cust-list')">
+            <span style="color:#aaa">— Select branch first —</span>
+            <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="cust-list" id="up-cust-list"></div>
+        </div>
+        <div id="up-cust-status" style="font-size:11px;color:#888;margin-top:4px"></div>
+      </div>
+      <div class="form-group" id="up-proj-group" style="display:none">
+        <label>Project</label>
+        <div class="cust-dropdown-wrap">
+          <div class="cust-selected disabled" id="up-proj-sel" onclick="toggleDD('up-proj-sel','up-proj-list')">
+            <span style="color:#aaa">Select project…</span>
+            <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="cust-list" id="up-proj-list"></div>
+        </div>
+        <div id="up-proj-status" style="font-size:11px;color:#888;margin-top:4px"></div>
+      </div>
+    </div>
+
+    <!-- Step 3: Phase (only for project, not General Delivery) -->
+    <div class="card locked" id="up-step3">
+      <div class="step-pill">Step 3</div>
+      <div class="card-title"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Select phase</div>
+      <div class="phase-grid">
+        <div class="phase-btn" id="ph-before" onclick="selectPhase('Before')">📷 Before</div>
+        <div class="phase-btn" id="ph-during" onclick="selectPhase('During')">🎬 During</div>
+        <div class="phase-btn" id="ph-after" onclick="selectPhase('After')">✅ After</div>
+      </div>
+    </div>
+
+    <!-- Step 4: Description -->
+    <div class="card locked" id="up-step4">
+      <div class="step-pill">Step 4</div>
+      <div class="card-title"><svg viewBox="0 0 24 24"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>Describe the work</div>
+      <div class="form-group">
+        <label>Short description <span style="color:#A32D2D">*</span></label>
+        <input type="text" id="up-desc" placeholder="e.g. Pole replacement Bay 4, Cable install Dock 2…" oninput="onDescInput()"/>
+        <div style="font-size:11px;color:#888;margin-top:3px">This becomes the file name. Multiple files: <em>Description [1], Description [2]…</em></div>
+      </div>
+      <div id="dest-pill-wrap"></div>
+    </div>
+
+    <!-- Step 5: Upload -->
+    <div class="card locked" id="up-step5">
+      <div class="step-pill">Step 5</div>
+      <div class="card-title"><svg viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>Upload photos</div>
+      <input type="file" id="file-input" multiple accept="image/*,.pdf,.heic,.heif" style="display:none" onchange="onFilesSelected(this.files)"/>
+      <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()"
+        ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+        <svg viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+        <p>Tap to browse or drag photos here</p>
+        <span>JPG · PNG · HEIC · PDF</span>
+      </div>
+      <div class="file-list" id="file-list"></div>
+      <div style="margin-top:.875rem;display:flex;gap:8px" id="upload-btn-row" style="display:none">
+        <button class="btn btn-primary" id="upload-btn" onclick="uploadFiles()" style="display:none">
+          <svg viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+          Upload to Google Drive
+        </button>
+        <button class="btn" id="clear-btn" onclick="clearFiles()" style="display:none;width:auto;padding:9px 14px;font-size:13px">Clear</button>
+      </div>
+      <div id="upload-result"></div>
+    </div>
+
+    <div style="text-align:center;margin-top:1.5rem">
+      <button class="btn btn-sm" onclick="showSettings()" style="width:auto;color:#aaa;border:none;background:none;font-size:12px">⚙ Settings</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const COMPANY='OptimERA';
+const NOTIF_EMAIL='drive-notifications@optimerainc.com';
+
+let cfg={clientId:'',rootFolderId:''};
+let auth={authed:false,accessToken:null,userEmail:''};
+let upSt={branch:null,isGD:false,custId:null,custName:null,projId:null,projName:null,phase:null,phaseId:null,files:[]};
+
+function loadCfg(){
+  try{const s=localStorage.getItem('ou_cfg');if(s)cfg={...cfg,...JSON.parse(s)};}catch(e){}
+  const ci=document.getElementById('s-client-id');const ri=document.getElementById('s-root-id');
+  if(ci)ci.value=cfg.clientId||'';
+  if(ri)ri.value=cfg.rootFolderId||'';
+}
+function saveSettings(){
+  cfg.clientId=document.getElementById('s-client-id').value.trim();
+  cfg.rootFolderId=document.getElementById('s-root-id').value.trim();
+  localStorage.setItem('ou_cfg',JSON.stringify(cfg));
+  document.getElementById('settings-status').textContent='✓ Settings saved';
+  setTimeout(()=>document.getElementById('settings-status').textContent='',2000);
+}
+function showSettings(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('main-app').style.display='none';
+  document.getElementById('settings-screen').style.display='block';
+  document.getElementById('s-client-id').value=cfg.clientId||'';
+  document.getElementById('s-root-id').value=cfg.rootFolderId||'';
+}
+function hideSettings(){
+  document.getElementById('settings-screen').style.display='none';
+  if(auth.authed){document.getElementById('main-app').style.display='block';}
+  else{document.getElementById('login-screen').style.display='flex';}
+}
+
+/* ── AUTH ── */
+function handleAuth(){
+  if(!cfg.clientId){showAlert('login-error','error','Please go to Settings and add your OAuth Client ID first.');return;}
+  const client=google.accounts.oauth2.initTokenClient({
+    client_id:cfg.clientId,
+    scope:'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/gmail.send',
+    callback:(resp)=>{
+      if(resp.error){showAlert('login-error','error','Sign-in error: '+resp.error);return;}
+      auth.authed=true;auth.accessToken=resp.access_token;
+      fetchUserInfo();
+    }
+  });
+  client.requestAccessToken();
+}
+async function fetchUserInfo(){
+  try{const r=await fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:'Bearer '+auth.accessToken}});const d=await r.json();auth.userEmail=d.email||'';}catch(e){}
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('settings-screen').style.display='none';
+  document.getElementById('main-app').style.display='block';
+  document.getElementById('user-email-display').textContent=auth.userEmail||'Signed in';
+  resetAll();
+}
+function signOut(){
+  auth={authed:false,accessToken:null,userEmail:''};
+  document.getElementById('main-app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  resetAll();
+}
+
+/* ── DRIVE API ── */
+const BASE='https://www.googleapis.com/drive/v3';
+async function apiCall(url,method,body){
+  const r=await fetch(url,{method,headers:{'Authorization':'Bearer '+auth.accessToken,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
+  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error?.message||`HTTP ${r.status}`);}
+  return r.json();
+}
+function buildUrl(path,params={}){
+  const merged={supportsAllDrives:'true',includeItemsFromAllDrives:'true',...params};
+  return `${BASE}/${path}?`+Object.entries(merged).map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join('&');
+}
+async function driveGet(path,params){return apiCall(buildUrl(path,params),'GET');}
+async function drivePost(path,params,body){return apiCall(buildUrl(path,params),'POST',body);}
+async function findFolder(name,parentId){
+  const q=`name='${name.replace(/'/g,"\\'")}' and mimeType='application/vnd.google-apps.folder' and trashed=false and '${parentId}' in parents`;
+  const res=await driveGet('files',{q,fields:'files(id,name)'});
+  return(res.files&&res.files.length>0)?res.files[0]:null;
+}
+async function findOrCreateFolder(name,parentId){
+  const ex=await findFolder(name,parentId);if(ex)return ex;
+  const meta={name,mimeType:'application/vnd.google-apps.folder',parents:[parentId]};
+  const res=await drivePost('files',{fields:'id,name'},meta);return res;
+}
+async function listFolders(parentId,exclude=[]){
+  let q=`'${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+  exclude.forEach(e=>{q+=` and name != '${e.replace(/'/g,"\\'")}'`;});
+  const res=await driveGet('files',{q,fields:'files(id,name)',orderBy:'name'});
+  return res.files||[];
+}
+
+/* ── DROPDOWN HELPER ── */
+function toggleDD(selId,listId){
+  const sel=document.getElementById(selId);const list=document.getElementById(listId);
+  if(sel.classList.contains('disabled'))return;
+  const open=list.classList.contains('open');
+  list.classList.toggle('open',!open);sel.classList.toggle('open',!open);
+}
+document.addEventListener('click',e=>{
+  ['up-cust-sel','up-proj-sel'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el&&!el.closest('.cust-dropdown-wrap').contains(e.target)){
+      const listId=id==='up-cust-sel'?'up-cust-list':'up-proj-list';
+      document.getElementById(listId)?.classList.remove('open');
+      el.classList.remove('open');
+    }
+  });
+});
+
+/* ── BRANCH ── */
+async function upSelectBranch(el,branch){
+  document.querySelectorAll('.branch-chip').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  upSt={branch,isGD:false,custId:null,custName:null,projId:null,projName:null,phase:null,phaseId:null,files:[]};
+  clearFiles();
+  // Unlock step 2
+  document.getElementById('up-step2').classList.remove('locked');
+  // Lock 3,4,5
+  ['up-step3','up-step4','up-step5'].forEach(id=>document.getElementById(id).classList.add('locked'));
+  ['ph-before','ph-during','ph-after'].forEach(id=>document.getElementById(id).classList.remove('selected'));
+  document.getElementById('up-proj-group').style.display='none';
+  document.getElementById('up-desc').value='';
+  document.getElementById('dest-pill-wrap').innerHTML='';
+  // Load customers
+  const custSel=document.getElementById('up-cust-sel');
+  custSel.innerHTML=`<span><span class="spinner"></span>Loading customers…</span><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>`;
+  custSel.classList.remove('disabled');
+  const custList=document.getElementById('up-cust-list');custList.innerHTML='';custList.classList.remove('open');custSel.classList.remove('open');
+  document.getElementById('up-cust-status').textContent='';
+  try{
+    const root=await findOrCreateFolder(COMPANY,cfg.rootFolderId||'root');
+    const branchF=await findOrCreateFolder(branch,root.id);
+    const custF=await findOrCreateFolder('Customers',branchF.id);
+    upSt.branchId=branchF.id;
+    const customers=await listFolders(custF.id,['_TEMPLATE - New Project']);
+    document.getElementById('up-cust-status').textContent=customers.length>0?`${customers.length} customer${customers.length>1?'s':''} found`:'No customers yet';
+    // Build list
+    custList.innerHTML='';
+    customers.forEach(c=>{
+      const item=document.createElement('div');item.className='cust-item';
+      item.innerHTML=`<svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:#666;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>${c.name}`;
+      item.onclick=()=>pickCustomer(c.id,c.name,false);
+      custList.appendChild(item);
+    });
+    // General Delivery option
+    const gdItem=document.createElement('div');gdItem.className='cust-item gd-item';
+    gdItem.innerHTML=`<svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:#854F0B;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>General Delivery (no project yet)`;
+    gdItem.onclick=()=>pickGeneralDelivery(branchF.id);
+    custList.appendChild(gdItem);
+  }catch(e){
+    document.getElementById('up-cust-status').textContent='Error loading: '+e.message;
+  }
+  custSel.innerHTML=`<span style="color:#aaa">Select customer or General Delivery…</span><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>`;
+}
+
+async function pickCustomer(id,name,isGD){
+  document.getElementById('up-cust-list').classList.remove('open');document.getElementById('up-cust-sel').classList.remove('open');
+  upSt.custId=id;upSt.custName=name;upSt.isGD=false;upSt.projId=null;upSt.projName=null;upSt.phase=null;upSt.phaseId=null;
+  document.getElementById('up-cust-sel').innerHTML=`<span>${name}</span><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>`;
+  // Show project dropdown
+  document.getElementById('up-proj-group').style.display='block';
+  const projSel=document.getElementById('up-proj-sel');projSel.innerHTML=`<span><span class="spinner"></span>Loading projects…</span><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>`;
+  projSel.classList.remove('disabled');
+  const projList=document.getElementById('up-proj-list');projList.innerHTML='';projList.classList.remove('open');projSel.classList.remove('open');
+  document.getElementById('up-proj-status').textContent='';
+  ['up-step3','up-step4','up-step5'].forEach(el=>document.getElementById(el).classList.add('locked'));
+  ['ph-before','ph-during','ph-after'].forEach(id=>document.getElementById(id).classList.remove('selected'));
+  clearFiles();
+  try{
+    const projects=await listFolders(id);
+    document.getElementById('up-proj-status').textContent=`${projects.length} project${projects.length!==1?'s':''} found`;
+    projList.innerHTML='';
+    if(!projects.length){const e=document.createElement('div');e.className='cust-item empty-item';e.textContent='No projects found';projList.appendChild(e);}
+    projects.forEach(p=>{
+      const item=document.createElement('div');item.className='cust-item';
+      item.innerHTML=`<svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:#666;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>${p.name}`;
+      item.onclick=()=>pickProject(p.id,p.name);
+      projList.appendChild(item);
+    });
+  }catch(e){document.getElementById('up-proj-status').textContent='Error: '+e.message;}
+  projSel.innerHTML=`<span style="color:#aaa">Select a project…</span><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>`;
+}
+
+function pickProject(id,name){
+  document.getElementById('up-proj-list').classList.remove('open');document.getElementById('up-proj-sel').classList.remove('open');
+  upSt.projId=id;upSt.projName=name;upSt.phase=null;upSt.phaseId=null;
+  document.getElementById('up-proj-sel').innerHTML=`<span>${name}</span><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>`;
+  // Unlock step 3 (phase)
+  document.getElementById('up-step3').classList.remove('locked');
+  ['up-step4','up-step5'].forEach(id=>document.getElementById(id).classList.add('locked'));
+  ['ph-before','ph-during','ph-after'].forEach(id=>document.getElementById(id).classList.remove('selected'));
+  clearFiles();
+}
+
+async function pickGeneralDelivery(branchId){
+  document.getElementById('up-cust-list').classList.remove('open');document.getElementById('up-cust-sel').classList.remove('open');
+  upSt.isGD=true;upSt.custId=null;upSt.custName='General Delivery';upSt.projId=null;upSt.projName=null;upSt.phase=null;upSt.phaseId=null;
+  document.getElementById('up-cust-sel').innerHTML=`<span style="color:#854F0B;font-weight:500">📥 General Delivery</span><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>`;
+  document.getElementById('up-proj-group').style.display='none';
+  // Find General Delivery folder
+  try{
+    const gdF=await findOrCreateFolder('General Delivery',branchId);
+    upSt.phaseId=gdF.id;// Direct upload target
+  }catch(e){console.error(e);}
+  // Skip step 3 (phase), unlock step 4
+  document.getElementById('up-step3').classList.add('locked');
+  document.getElementById('up-step4').classList.remove('locked');
+  document.getElementById('up-step5').classList.add('locked');
+  clearFiles();
+  updateDestPill();
+}
+
+async function selectPhase(phase){
+  ['ph-before','ph-during','ph-after'].forEach(id=>document.getElementById(id).classList.remove('selected'));
+  document.getElementById('ph-'+phase.toLowerCase()).classList.add('selected');
+  upSt.phase=phase;upSt.phaseId=null;
+  document.getElementById('up-step4').classList.add('locked');
+  document.getElementById('up-step5').classList.add('locked');
+  clearFiles();
+  try{
+    const photoF=await findFolder('07_Photos & Media',upSt.projId);
+    if(!photoF)throw new Error('07_Photos & Media not found');
+    const phaseF=await findOrCreateFolder(phase,photoF.id);
+    upSt.phaseId=phaseF.id;
+    document.getElementById('up-step4').classList.remove('locked');
+    updateDestPill();
+  }catch(e){console.error('Phase folder error:',e);}
+}
+
+function updateDestPill(){
+  const wrap=document.getElementById('dest-pill-wrap');
+  if(!upSt.phaseId){wrap.innerHTML='';return;}
+  let dest='';
+  if(upSt.isGD){dest=`${upSt.branch} / General Delivery`;}
+  else{dest=`${upSt.projName} / 07_Photos & Media / ${upSt.phase}`;}
+  wrap.innerHTML=`<div class="destination-pill"><svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:#0C447C;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>${dest}</div>`;
+}
+
+function onDescInput(){
+  // Enable step 5 when description is typed and phaseId is ready
+  const desc=document.getElementById('up-desc').value.trim();
+  if(desc&&upSt.phaseId){document.getElementById('up-step5').classList.remove('locked');}
+  else{document.getElementById('up-step5').classList.add('locked');}
+  renderFileList(); // Update preview names
+}
+
+/* ── FILES ── */
+function onDragOver(e){e.preventDefault();document.getElementById('drop-zone').classList.add('dragover');}
+function onDragLeave(){document.getElementById('drop-zone').classList.remove('dragover');}
+function onDrop(e){e.preventDefault();document.getElementById('drop-zone').classList.remove('dragover');onFilesSelected(e.dataTransfer.files);}
+function onFilesSelected(fileList){
+  Array.from(fileList).forEach(f=>{
+    if(!upSt.files.find(x=>x.file.name===f.name&&x.file.size===f.size))
+      upSt.files.push({file:f,status:'pending',progress:0});
+  });
+  renderFileList();
+  document.getElementById('upload-btn').style.display=upSt.files.length?'inline-flex':'none';
+  document.getElementById('clear-btn').style.display=upSt.files.length?'inline-flex':'none';
+}
+function getFileName(index){
+  const desc=document.getElementById('up-desc').value.trim()||'Photo';
+  const ext=upSt.files[index]?.file.name.split('.').pop()||'jpg';
+  if(upSt.files.length===1)return `${desc}.${ext}`;
+  return `${desc} [${index+1}].${ext}`;
+}
+function renderFileList(){
+  const list=document.getElementById('file-list');list.innerHTML='';
+  upSt.files.forEach((item,i)=>{
+    const isImg=item.file.type.startsWith('image/');
+    const sz=item.file.size>1024*1024?`${(item.file.size/1024/1024).toFixed(1)} MB`:`${(item.file.size/1024).toFixed(0)} KB`;
+    const sc=item.status==='done'?'#639922':item.status==='error'?'#A32D2D':'#185FA5';
+    const st=item.status==='done'?'✓':item.status==='error'?'✗':item.status==='uploading'?`${item.progress}%`:'';
+    const div=document.createElement('div');div.className='file-item';
+    div.innerHTML=`
+      <div class="file-thumb-icon" id="fthumb-${i}"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+      <div class="file-info">
+        <div class="file-name">${item.file.name}</div>
+        <div class="file-rename">→ ${getFileName(i)}</div>
+        <div class="file-size">${sz}</div>
+        <div class="file-progress"><div class="file-progress-bar" id="fprog-${i}" style="width:${item.progress}%"></div></div>
+      </div>
+      <div class="file-status" style="color:${sc}">${st}</div>
+      ${item.status==='pending'?`<button class="file-remove" onclick="removeFile(${i})"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`:''}
+    `;
+    list.appendChild(div);
+    if(isImg){
+      const r=new FileReader();r.onload=e=>{const t=document.getElementById(`fthumb-${i}`);if(t)t.innerHTML=`<img src="${e.target.result}" class="file-thumb"/>`;};
+      r.readAsDataURL(item.file);
+    }
+  });
+}
+function removeFile(i){upSt.files.splice(i,1);renderFileList();document.getElementById('upload-btn').style.display=upSt.files.length?'inline-flex':'none';document.getElementById('clear-btn').style.display=upSt.files.length?'inline-flex':'none';}
+function clearFiles(){upSt.files=[];document.getElementById('file-list').innerHTML='';document.getElementById('upload-btn').style.display='none';document.getElementById('clear-btn').style.display='none';document.getElementById('upload-result').innerHTML='';document.getElementById('file-input').value='';}
+
+/* ── UPLOAD ── */
+async function uploadFiles(){
+  const desc=document.getElementById('up-desc').value.trim();
+  if(!desc){showAlert('upload-result','error','Please add a description first.');return;}
+  if(!upSt.phaseId){showAlert('upload-result','error','Destination folder not ready.');return;}
+  if(!upSt.files.length){showAlert('upload-result','error','Please select files to upload.');return;}
+  const btn=document.getElementById('upload-btn');btn.innerHTML='<span class="spinner-white"></span> Uploading…';btn.disabled=true;
+  let done=0,errors=0;
+  for(let i=0;i<upSt.files.length;i++){
+    const item=upSt.files[i];if(item.status==='done')continue;
+    item.status='uploading';item.progress=10;renderFileList();
+    try{
+      const fname=getFileName(i);
+      await uploadFileToDrive(item.file,fname,upSt.phaseId,(p)=>{item.progress=p;const bar=document.getElementById(`fprog-${i}`);if(bar)bar.style.width=p+'%';});
+      item.status='done';item.progress=100;done++;
+    }catch(e){item.status='error';errors++;}
+    renderFileList();
+  }
+  btn.innerHTML='<svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg> Upload to Google Drive';
+  btn.disabled=false;
+  if(done>0){
+    // Send notification email
+    await sendNotification(desc,done);
+    const folderLink=`https://drive.google.com/drive/folders/${upSt.phaseId}`;
+    showAlert('upload-result','success',`${done} file${done>1?'s':''} uploaded successfully! ${errors>0?errors+' failed. ':''}<a href="${folderLink}" target="_blank" style="color:#3B6D11;text-decoration:underline">Open folder →</a>`);
+  }else{
+    showAlert('upload-result','error','Upload failed. Please check your connection and try again.');
+  }
+}
+
+async function uploadFileToDrive(file,name,parentId,onProgress){
+  const meta={name,parents:[parentId]};
+  const boundary='OptimERA'+Math.random().toString(36).slice(2);
+  const enc=new TextEncoder();
+  const pre=enc.encode(`--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n--${boundary}\r\nContent-Type: ${file.type||'application/octet-stream'}\r\n\r\n`);
+  const buf=await file.arrayBuffer();
+  const epi=enc.encode(`\r\n--${boundary}--`);
+  const body=new Uint8Array(pre.byteLength+buf.byteLength+epi.byteLength);
+  body.set(pre,0);body.set(new Uint8Array(buf),pre.byteLength);body.set(epi,pre.byteLength+buf.byteLength);
+  onProgress&&onProgress(40);
+  const r=await fetch(`https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true`,{
+    method:'POST',headers:{'Authorization':'Bearer '+auth.accessToken,'Content-Type':`multipart/related; boundary=${boundary}`},body
+  });
+  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error?.message||'Upload failed');}
+  onProgress&&onProgress(100);return r.json();
+}
+
+/* ── EMAIL NOTIFICATION ── */
+async function sendNotification(desc,fileCount){
+  try{
+    const now=new Date().toLocaleString();
+    const dest=upSt.isGD?`${upSt.branch} / General Delivery`:`${upSt.branch} / ${upSt.custName} / ${upSt.projName} / 07_Photos & Media / ${upSt.phase}`;
+    const folderLink=`https://drive.google.com/drive/folders/${upSt.phaseId}`;
+    const body=`New photos uploaded to OptimERA Drive\n\nUploaded by: ${auth.userEmail}\nBranch: ${upSt.branch}\nDestination: ${dest}\nDescription: ${desc}\nFiles uploaded: ${fileCount}\nTime: ${now}\n\nView folder: ${folderLink}`;
+    const subject=`[OptimERA] ${fileCount} photo${fileCount>1?'s':''} uploaded by ${auth.userEmail} — ${upSt.branch}`;
+    const raw=btoa(`To: ${NOTIF_EMAIL}\r\nSubject: ${subject}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${body}`).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+    await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+auth.accessToken,'Content-Type':'application/json'},
+      body:JSON.stringify({raw})
+    });
+  }catch(e){console.warn('Email notification failed:',e);}
+}
+
+function resetAll(){
+  upSt={branch:null,isGD:false,custId:null,custName:null,projId:null,projName:null,phase:null,phaseId:null,files:[]};
+  document.querySelectorAll('.branch-chip').forEach(c=>c.classList.remove('selected'));
+  ['up-step2','up-step3','up-step4','up-step5'].forEach(id=>document.getElementById(id).classList.add('locked'));
+  document.getElementById('up-desc').value='';
+  document.getElementById('dest-pill-wrap').innerHTML='';
+  document.getElementById('up-proj-group').style.display='none';
+  clearFiles();
+}
+
+function showAlert(id,type,msg){
+  const el=document.getElementById(id);if(!el)return;
+  const icon=type==='success'?'<polyline points="20 6 9 17 4 12"/>':'<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>';
+  const bg=type==='success'?'#EAF3DE':'#FCEBEB';const color=type==='success'?'#3B6D11':'#A32D2D';
+  el.innerHTML=`<div class="alert alert-${type}" style="background:${bg};color:${color}"><svg viewBox="0 0 24 24" style="stroke:${color}">${icon}</svg><span>${msg}</span></div>`;
+}
+
+loadCfg();
+</script>
+</body>
+</html>

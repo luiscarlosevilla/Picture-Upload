@@ -261,6 +261,7 @@ textarea{resize:vertical;min-height:80px}
 const COMPANY='OptimERA';
 const NOTIF_EMAIL='drive-notifications@optimerainc.com';
 const HARDCODED_CLIENT_ID='1051061493824-tu08v7j0476ie5fdr9p5s59k9bifo5je.apps.googleusercontent.com';
+const HARDCODED_ROOT_ID='1S561J65Ve5SW99zWQYhPQIbP88WjatGN';
 
 let cfg={clientId:'',rootFolderId:''};
 let auth={authed:false,accessToken:null,userEmail:''};
@@ -390,7 +391,7 @@ async function upSelectBranch(el,branch){
   const custList=document.getElementById('up-cust-list');custList.innerHTML='';custList.classList.remove('open');custSel.classList.remove('open');
   document.getElementById('up-cust-status').textContent='';
   try{
-    const root=await findOrCreateFolder(COMPANY,cfg.rootFolderId||'root');
+    const root=await findOrCreateFolder(COMPANY,HARDCODED_ROOT_ID);
     const branchF=await findOrCreateFolder(branch,root.id);
     const custF=await findOrCreateFolder('Customers',branchF.id);
     upSt.branchId=branchF.id;

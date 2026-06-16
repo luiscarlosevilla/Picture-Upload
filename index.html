@@ -562,20 +562,27 @@ async function uploadFiles(){
   if(!upSt.files.length){showAlert('upload-result','error','Please select files to upload.');return;}
   const btn=document.getElementById('upload-btn');btn.innerHTML='<span class="spinner-white"></span> Uploading…';btn.disabled=true;
   let done=0,errors=0;
+  console.log('[Upload] Starting upload of',upSt.files.length,'file(s) to folder',upSt.phaseId);
   for(let i=0;i<upSt.files.length;i++){
     const item=upSt.files[i];if(item.status==='done')continue;
     item.status='uploading';item.progress=10;renderFileList();
     try{
       const fname=getFileName(i);
+      console.log(`[Upload] Uploading file ${i+1}: ${fname}`);
       await uploadFileToDrive(item.file,fname,upSt.phaseId,(p)=>{item.progress=p;const bar=document.getElementById(`fprog-${i}`);if(bar)bar.style.width=p+'%';});
       item.status='done';item.progress=100;done++;
-    }catch(e){item.status='error';errors++;}
+      console.log(`[Upload] File ${i+1} done. Total done: ${done}`);
+    }catch(e){
+      item.status='error';errors++;
+      console.error(`[Upload] File ${i+1} failed:`,e.message);
+    }
     renderFileList();
   }
+  console.log(`[Upload] Finished. done=${done} errors=${errors}`);
   btn.innerHTML='<svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg> Upload to Google Drive';
   btn.disabled=false;
   if(done>0){
-    // Send notification email
+    console.log('[Upload] Sending notification email...');
     await sendNotification(desc,done);
     const folderLink=`https://drive.google.com/drive/folders/${upSt.phaseId}`;
     showAlert('upload-result','success',`${done} file${done>1?'s':''} uploaded successfully! ${errors>0?errors+' failed. ':''}<a href="${folderLink}" target="_blank" style="color:#3B6D11;text-decoration:underline">Open folder →</a>`);
